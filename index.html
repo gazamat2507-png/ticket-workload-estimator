@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6fb">
+  <title>Оценка нагрузки команды</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="hero-mark" aria-hidden="true">⏱</div>
+      <div>
+        <p class="eyebrow">ПЛАНИРОВАНИЕ СМЕНЫ</p>
+        <h1>Оценка нагрузки команды</h1>
+        <p class="lead">Прикиньте, сколько времени потребуется на очередь проблемных билетов и хватит ли ресурсов смены.</p>
+      </div>
+    </header>
+
+    <section class="panel inputs-panel" aria-labelledby="params-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">ИСХОДНЫЕ ДАННЫЕ</p><h2 id="params-title">Параметры смены</h2></div>
+        <button class="button button-quiet" id="resetButton" type="button">Сбросить данные</button>
+      </div>
+      <div class="field-grid">
+        <label class="field"><span>Билетов за смену</span><input id="ticketCount" type="number" min="0" step="1" value="500" inputmode="numeric"><small>Общее число билетов в очереди</small></label>
+        <label class="field"><span>Сотрудников в смене</span><select id="staffCount" aria-label="Сотрудников в каждой смене"><option value="2">2 человека</option><option value="3">3 человека</option><option value="4">4 человека</option><option value="5">5 человек</option><option value="6">6 человек</option><option value="7">7 человек</option><option value="8">8 человек</option></select><small>Выберите число для каждой из 4 смен</small></label>
+        <label class="field"><span>Длительность смены</span><div class="input-unit"><input id="shiftHours" type="number" min="0" step="0.25" value="12" inputmode="decimal"><span>ч</span></div><small>Продолжительность смены одного сотрудника</small></label>
+        <label class="field"><span>Обеденный перерыв</span><div class="input-unit"><input id="lunchHours" type="number" min="0" step="0.25" value="1" inputmode="decimal"><span>ч</span></div><small>Для одного сотрудника; обеды идут по очереди</small></label>
+        <label class="field"><span>Среднее время обработки</span><div class="input-unit"><input id="avgMinutes" type="number" min="0" step="1" value="30" inputmode="decimal"><span>мин</span></div><small>Используется, если категории не заданы</small></label>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="shifts-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">УЧЁТ ЧЕТЫРЁХ СМЕН</p><h2 id="shifts-title">Проблемные билеты по сменам</h2><p class="section-note">Укажите количество ПБ отдельно для каждой смены: от 400 до 700.</p></div>
+      </div>
+      <div id="shiftList" class="shift-grid"></div>
+      <div id="shiftTotal" class="category-summary"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="staff-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">КОМАНДА</p><h2 id="staff-title">Эффективность: расчётная загрузка сотрудников</h2><p class="section-note">Укажите фамилии сотрудников. При изменении числа людей ПБ каждой смены автоматически распределяются поровну; затем количество можно скорректировать вручную.</p></div>
+      </div>
+      <div class="staff-table-wrap"><table class="staff-table"><thead><tr><th>Сотрудник</th><th>Смена</th><th>Фамилия</th><th>Билетов в смене</th><th>Загрузка за смену</th></tr></thead><tbody id="staffList"></tbody></table></div>
+      <div id="staffSummary" class="category-summary"></div>
+    </section>
+
+    <section class="panel categories-panel" aria-labelledby="categories-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">ТОЧНЕЕ ОЦЕНИТЬ ОЧЕРЕДЬ</p><h2 id="categories-title">Категории билетов</h2><p class="section-note">Если заполнить категории, расчёт будет учитывать их количество и время обработки.</p></div>
+        <button class="button button-secondary" id="addCategoryButton" type="button">＋ Добавить категорию</button>
+      </div>
+      <div class="category-head" aria-hidden="true"><span>Название</span><span>Количество</span><span>Время на билет</span><span></span></div>
+      <div id="categoryList" class="category-list"></div>
+      <div id="categorySummary" class="category-summary" hidden></div>
+    </section>
+
+    <div id="validationMessage" class="alert alert-error" role="alert" hidden></div>
+    <div id="warningMessage" class="alert alert-warning" role="status" hidden></div>
+
+    <section class="results" aria-labelledby="results-title">
+      <div class="results-title"><div><p class="eyebrow">РАСЧЁТ СМЕНЫ</p><h2 id="results-title">Результаты</h2></div><span class="live-badge"><i></i> Обновляется автоматически</span></div>
+      <div class="metric-grid">
+        <article class="metric-card"><div class="metric-icon blue">◷</div><p class="metric-label">Время на сотрудника</p><strong id="perEmployeeTime" class="metric-value">—</strong><p id="perEmployeeSub" class="metric-sub">Доступное рабочее время</p></article>
+        <article class="metric-card"><div class="metric-icon violet">◫</div><p class="metric-label">Время команды</p><strong id="teamTime" class="metric-value">—</strong><p id="teamTimeSub" class="metric-sub">Суммарно, с учётом обеда</p></article>
+        <article class="metric-card"><div class="metric-icon orange">⌁</div><p class="metric-label">Обработка очереди</p><strong id="processingTime" class="metric-value">—</strong><p id="processingSub" class="metric-sub">Расчётное время по категориям</p></article>
+        <article class="metric-card"><div class="metric-icon green">↗</div><p class="metric-label">Билетов на сотрудника</p><strong id="perEmployeeTickets" class="metric-value">—</strong><p class="metric-sub">При равномерном распределении</p></article>
+        <article class="metric-card"><div class="metric-icon teal">◉</div><p class="metric-label">Необходимое время на билет</p><strong id="requiredAvg" class="metric-value">—</strong><p class="metric-sub">Чтобы закрыть очередь за смену</p></article>
+        <article class="metric-card"><div class="metric-icon pink">▥</div><p class="metric-label">Пропускная способность</p><strong id="capacity" class="metric-value">—</strong><p class="metric-sub">Билетов за смену при заданном темпе</p></article>
+      </div>
+      <div class="load-panel">
+        <div class="load-heading"><div><p class="eyebrow">ЗАГРУЗКА</p><h3>Использование доступного времени</h3></div><div class="load-legend"><span><i class="dot team-dot"></i>Команда</span><span><i class="dot person-dot"></i>Сотрудник</span></div></div>
+        <div class="load-row"><div class="load-label"><span>Команда</span><strong id="teamLoadText">—</strong></div><div class="progress-track"><div id="teamProgress" class="progress-bar team-bar"></div></div></div>
+        <div class="load-row"><div class="load-label"><span>В среднем на сотрудника</span><strong id="employeeLoadText">—</strong></div><div class="progress-track"><div id="employeeProgress" class="progress-bar person-bar"></div></div></div>
+        <p class="load-footnote">Загрузка выше 100% означает, что очередь не помещается в доступное рабочее время смены.</p>
+      </div>
+    </section>
+
+    <aside class="note"><div class="note-icon">i</div><div><h3>Количество закрытых билетов — не оценка эффективности</h3><p>Для объективной оценки учитывайте сложность билетов, качество решения, повторные обращения и время ожидания ответов от других подразделений. Это планировочный расчёт, а не индивидуальная оценка сотрудника.</p></div></aside>
+    <footer><span>Все вычисления выполняются в этом браузере.</span><span id="saveStatus">Изменения сохраняются автоматически</span></footer>
+  </main>
+</body>
+</html>
